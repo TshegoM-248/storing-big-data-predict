@@ -1,62 +1,54 @@
-AWSTemplateFormatVersion: 2010-09-09
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Windows Instance Template'
 
 Parameters:
   KeyName:
-    Description: Name of an existing EC2 KeyPair to enable RDP access to the file server.
-    Type: 'AWS::EC2::KeyPair::KeyName'
-    ConstraintDescription: Must be the name of an existing EC2 KeyPair.
+    Type: AWS::EC2::KeyPair::KeyName
   VPC:
-    Description: VPC to deploy resources into.
-    Type: 'AWS::EC2::VPC::Id'
+    Type: String
   Subnet:
-    Description: Subnet to deploy resources into.
-    Type: 'AWS::EC2::Subnet::Id'
+    Type: AWS::EC2::Subnet::Id
   SecurityGroupIds:
-    Description: Specify the security group/s for resources.
-    Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Type: List<AWS::EC2::SecurityGroup::Id>
   LatestWindowsAmiId:
-    Description: Do not modify the default value!
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: '/aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base'
 
 Resources:
   WindowsInstanceRole:
-    Type: 'AWS::IAM::Role'
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
             Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
+              Service: 'ec2.amazonaws.com'
       DeletionPolicy: Delete
-
-  WindowsInstanceRolePolicy:
-    Type: 'AWS::IAM::Policy'
+  WindowsInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
     Properties:
-      PolicyName: Windows-client-!Ref 'AWS::StackName'
+      Path: '/'
+      Roles:
+        - !Ref WindowsInstanceRole
+  WindowsInstanceRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub 'Windows-client-{StackName}'
       PolicyDocument:
-        Version: 2012-10-17
+        Version: '2012-10-17'
         Statement:
-          - Effect: Allow
-            Action:
+          - Action:
               - 's3:Get*'
               - 's3:List*'
+            Effect: Allow
             Resource: '*'
       Roles:
         - !Ref WindowsInstanceRole
       DeletionPolicy: Delete
-
-  WindowsInstanceProfile:
-    Type: 'AWS::IAM::InstanceProfile'
-    Properties:
-      Path: /
-      Roles:
-        - !Ref WindowsInstanceRole
-
   WindowsInstance:
-    Type: 'AWS::EC2::Instance'
+    Type: AWS::EC2::Instance
     Properties:
       ImageId: !Ref LatestWindowsAmiId
       KeyName: !Ref KeyName
@@ -67,4 +59,3 @@ Resources:
       Tags:
         - Key: Name
           Value: DE-Extract-Windows-Instance
-      UserData: "YOUR USER DATA SCRIPT HERE"
