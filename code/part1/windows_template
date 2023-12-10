@@ -1,5 +1,15 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Windows Instance Template'
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Extract Predict Part 1 - File Server resource deployment
+        Parameters:
+          - VPC
+          - Subnet
+          - KeyName
+          - SecurityGroupIds
+          - LatestLinuxAmiId
 
 Parameters:
   KeyName:
