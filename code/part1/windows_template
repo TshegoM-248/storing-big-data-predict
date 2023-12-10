@@ -12,51 +12,76 @@ Metadata:
           - LatestLinuxAmiId
 
 Parameters:
+ Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
+    Description: Select the key pair to decrypt the Windows instance password
+
   VPC:
-    Type: String
+    Type: AWS::EC2::VPC::Id
+    Description: Select the VPC for the Windows instance
+
   Subnet:
     Type: AWS::EC2::Subnet::Id
+    Description: Select the public subnet for the Windows instance
+
   SecurityGroupIds:
     Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Select one or more security groups for the Windows instance
+
   LatestWindowsAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: '/aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base'
+    Description: Specify the latest Windows AMI for the instance
+    Default: /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-Base
+
 
 Resources:
   WindowsInstanceRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: WindowsInstanceRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Action: 'sts:AssumeRole'
-            Effect: Allow
+          - Effect: Allow
             Principal:
-              Service: 'ec2.amazonaws.com'
-      DeletionPolicy: Delete
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: WindowsInstanceRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - s3:Get*
+                  - s3:List*
+                Resource: "*"
+          DeletionPolicy: Retain
+
   WindowsInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      Path: '/'
+      Path: /
       Roles:
-        - !Ref WindowsInstanceRole
+        - Ref: WindowsInstanceRole
+
   WindowsInstanceRolePolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub 'Windows-client-{StackName}'
+      PolicyName: !Sub "Windows-client-${AWS::StackName}"
+      Roles:
+        - Ref: WindowsInstanceRole
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Action:
-              - 's3:Get*'
-              - 's3:List*'
-            Effect: Allow
-            Resource: '*'
-      Roles:
-        - !Ref WindowsInstanceRole
-      DeletionPolicy: Delete
+          - Effect: Allow
+            Action: 
+              - s3:Get*
+              - s3:List*
+            Resource: "*"
+      DeletionPolicy: Retain
+
   WindowsInstance:
     Type: AWS::EC2::Instance
     Properties:
